@@ -388,19 +388,54 @@ signOutBtn.addEventListener('click', async () => {
                 const ry = Math.min(startY, endY);
                 const w = Math.abs(endX - startX);
                 const h = Math.abs(endY - startY);
-                const cellWidth = w / 5;
-                for (let i = 0; i < 5; i++) {
-                    ctx.rect(rx + i * cellWidth, ry, cellWidth, h);
+                
+                // Increase minimum cell dimensions
+                const minCellWidth = 50;  // Increased from 30 to 50
+                const minCellHeight = 40; // Increased from 30 to 40
+                
+                // Calculate number of columns based on width
+                const numCols = Math.max(1, Math.floor(w / minCellWidth));
+                const cellWidth = w / numCols;
+                
+                // Calculate number of rows based on height
+                const numRows = Math.max(1, Math.floor(h / minCellHeight));
+                const cellHeight = h / numRows;
+                
+                // Draw grid if height is significant
+                if (h > minCellHeight) {
+                    // Draw grid cells
+                    for (let row = 0; row < numRows; row++) {
+                        for (let col = 0; col < numCols; col++) {
+                            ctx.rect(
+                                rx + col * cellWidth,
+                                ry + row * cellHeight,
+                                cellWidth,
+                                cellHeight
+                            );
+                        }
+                    }
+                } else {
+                    // Draw single row array
+                    for (let i = 0; i < numCols; i++) {
+                        ctx.rect(rx + i * cellWidth, ry, cellWidth, h);
+                    }
                 }
                 break;
             }
+            
             case 'stack': {
                 const rx = Math.min(startX, endX);
                 const ry = Math.min(startY, endY);
                 const w = Math.abs(endX - startX);
                 const h = Math.abs(endY - startY);
-                const cellHeight = h / 5;
-                for (let i = 0; i < 5; i++) {
+                
+                // Increase minimum cell height
+                const minCellHeight = 40; // Increased from 30 to 40
+                const numCells = Math.max(1, Math.floor(h / minCellHeight));
+                const cellHeight = h / numCells;
+                
+                // Draw stack cells
+                for (let i = 0; i < numCells; i++) {
                     ctx.rect(rx, ry + i * cellHeight, w, cellHeight);
                 }
                 break;
@@ -860,6 +895,23 @@ signOutBtn.addEventListener('click', async () => {
             ctx.lineTo(points[points.length - 2], points[points.length - 1]);
         }
     }
+
+    // Update the resize observer
+    const canvasResizeObserver = new ResizeObserver(entries => {
+        for (const entry of entries) {
+            if (entry.target === canvasContainer) {
+                resizeCanvas();
+            }
+        }
+    });
+
+    // Start observing the canvas container
+    canvasContainer.addEventListener('mouseup', () => {
+        resizeCanvas();
+    });
+
+    // Observe the canvas container for size changes
+    canvasResizeObserver.observe(canvasContainer);
 
 }); 
 document.addEventListener('DOMContentLoaded', () => {
