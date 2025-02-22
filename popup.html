@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LeetCode Brainstorm</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="google-drive-services.js" defer></script>
+    <script src="popup.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <div class="auth-section">
+            <button id="google-signin" class="google-btn" style="display: none;">
+                <i class="fab fa-google"></i> Sign in with Google
+            </button>
+            <div id="user-profile" class="user-profile" style="display: none;">
+                <span id="user-email"></span>
+                <button id="sign-out" class="sign-out-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="toolbar">
+            <div class="toolbar-row">
+                <!-- Shape selection buttons -->
+                <div class="tool-group basic-tools">
+                    <button class="shape-btn active" data-shape="free" title="Freehand">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="shape-btn" data-shape="line" title="Line">
+                        <i class="fas fa-slash"></i>
+                    </button>
+                    <button class="shape-btn" data-shape="arrow" title="Arrow">
+                        <i class="fas fa-long-arrow-alt-right"></i>
+                    </button>
+                    <button class="shape-btn" data-shape="rectangle" title="Rectangle">
+                        <i class="far fa-square"></i>
+                    </button>
+                    <button class="shape-btn" data-shape="circle" title="Circle">
+                        <i class="far fa-circle"></i>
+                    </button>
+                    <button class="shape-btn" data-shape="array" title="Array">
+                        <i class="fas fa-th"></i>
+                    </button>
+                    <button class="shape-btn" data-shape="stack" title="Stack">
+                        <i class="fas fa-layer-group"></i>
+                    </button>
+                    <button id="eraser" title="Eraser">
+                        <i class="fas fa-eraser"></i>
+                    </button>
+                    <div class="color-size-group">
+                        <input type="color" id="colorPicker" value="#ffa116" title="Color">
+                        <input type="range" id="brushSize" min="1" max="20" value="3" title="Brush Size">
+                    </div>
+                </div>
+            </div>
+            <!-- Action buttons in a separate row -->
+            
+        </div>
+        <div class="toolbar-row action-row">
+            <div class="tool-group action-tools">
+                <button id="clear" title="Clear Canvas">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button id="save" title="Save">
+                    <i class="fas fa-save"></i>
+                </button>
+                <button id="load" title="Load">
+                    <i class="fas fa-folder-open"></i>
+                </button>
+            </div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="drawingCanvas" width="800" height="600"></canvas>
+            <div class="resize-handle"></div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "LeetCode Brainstorm",
+  "version": "1.0",
+  "description": "A Chrome extension for scribbling and brainstorming ideas while solving LeetCode problems",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "identity",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://leetcode.com/*",
+    "https://www.googleapis.com/*"
+  ],
+  "oauth2": {
+  "client_id": "820450128585-nn7b422mupidrih5jdmr4m9dvbg7gc3l.apps.googleusercontent.com",
+  "scopes": [
+    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/drive.appdata",
+    "https://www.googleapis.com/auth/drive"
+  ],
+  "redirect_uris": [
+    "https://locggkcmhmbijmohonelpigcjdgmgmpi.chromiumapp.org/"
+  ]
+},
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://leetcode.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  "background": {
+  "service_worker": "background.js",
+  "type": "module"
+},
+
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  }
+} 
