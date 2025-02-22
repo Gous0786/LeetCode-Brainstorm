@@ -146,6 +146,7 @@ class GoogleDriveService {
 
   async updateDraft(problemId, drawingData) {
       try {
+          // First find the file
           const query = encodeURIComponent(`name='drawing_${problemId}.json' and trashed=false`);
           const response = await fetch(`${this.baseUrl}/files?q=${query}`, {
               headers: {
@@ -159,14 +160,14 @@ class GoogleDriveService {
 
           const data = await response.json();
           if (!data.files || data.files.length === 0) {
-              console.log('No draft found for problem ID:', problemId);
-              return null; // No file found
+              // If file doesn't exist, create new one
+              return await this.saveDraft(problemId, drawingData);
           }
 
-          const fileId = data.files[0].id; // Get the file ID
+          const fileId = data.files[0].id;
 
-          // Update the file content using PATCH
-          const updateResponse = await fetch(`${this.baseUrl}/files/${fileId}?uploadType=media`, {
+          // Use the upload endpoint for media content
+          const updateResponse = await fetch(`${this.uploadUrl}/files/${fileId}?uploadType=media`, {
               method: 'PATCH',
               headers: {
                   'Authorization': `Bearer ${this.token}`,
@@ -176,10 +177,13 @@ class GoogleDriveService {
           });
 
           if (!updateResponse.ok) {
-              throw new Error(`Failed to update draft: ${updateResponse.statusText}`);
+              const errorText = await updateResponse.text();
+              throw new Error(`Failed to update draft: ${errorText}`);
           }
 
-          console.log('Draft updated successfully for problem ID:', problemId);
+          const result = await updateResponse.json();
+          console.log('Draft updated successfully:', result);
+          return result;
       } catch (error) {
           console.error('Error in updateDraft:', error);
           throw error;

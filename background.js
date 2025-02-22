@@ -33,23 +33,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.type) {
     case 'INITIATE_AUTH':
       initiateAuth().then(token => {
-        sendResponse({ success: true, token });
+        sendResponse({ success: true, token: token });
       }).catch(error => {
-        console.error('Auth failed:', error);
         sendResponse({ success: false, error: error.message });
       });
       return true; // Keep the message channel open for async response
 
     case 'GET_AUTH_TOKEN':
-      getTokenFromStorage()
-        .then(token => {
-          sendResponse({ token });
-        })
-        .catch(error => {
-          console.error('Error retrieving token:', error);
-          sendResponse({ token: null }); // Send null if no token is found
-        });
-      return true; // Keep the message channel open for async response
+      sendResponse({ token: authToken });
+      return true;
 
     case 'SIGN_OUT':
       signOut().then(() => {
@@ -81,11 +73,12 @@ async function initiateAuth() {
     // Extract token from response URL
     const urlParams = new URLSearchParams(new URL(responseUrl).hash.substring(1));
     const token = urlParams.get('access_token');
+    const expiresIn = parseInt(urlParams.get('expires_in')) || 3600; // Default to 1 hour if not provided
     console.log(token);
     
     if (token) {
       authToken = token;
-      storeToken(token);
+      storeToken(token, expiresIn);
       return token;
     } else {
       throw new Error('No access token found in the response');
@@ -113,31 +106,57 @@ async function verifyToken(token) {
 
 // Sign out user
 async function signOut() {
-  try {
-    if (authToken) {
-      // Revoke the token
-      await fetch(`https://accounts.google.com/o/oauth2/revoke?token=${authToken}`);
-      authToken = null;
+    try {
+        if (authToken) {
+            // Revoke the token
+            await fetch(`https://accounts.google.com/o/oauth2/revoke?token=${authToken}`);
+            // Clear stored token and expiration
+            await chrome.storage.local.remove(['oauthToken', 'tokenExpiration']);
+            authToken = null;
+            return { success: true };
+        }
+        return { success: true }; // Return success even if no token (already signed out)
+    } catch (error) {
+        console.error('Token revocation failed:', error);
+        throw error;
     }
-  } catch (error) {
-    console.error('Token revocation failed:', error);
-    throw error;
-  }
 }
 
-function storeToken(token) {
-    chrome.storage.local.set({ oauthToken: token }, () => {
-        console.log('Token stored successfully');
+// Add token expiration time to storage
+function storeToken(token, expiresIn) {
+    const expirationTime = Date.now() + (expiresIn * 1000); // Convert seconds to milliseconds
+    chrome.storage.local.set({ 
+        oauthToken: token,
+        tokenExpiration: expirationTime
+    }, () => {
+        console.log('Token stored successfully with expiration');
     });
 }
 
-function getTokenFromStorage() {
+// Update getTokenFromStorage to check expiration
+async function getTokenFromStorage() {
     return new Promise((resolve, reject) => {
-        chrome.storage.local.get(['oauthToken'], (result) => {
-            if (result.oauthToken) {
-                resolve(result.oauthToken);
-            } else {
+        chrome.storage.local.get(['oauthToken', 'tokenExpiration'], async (result) => {
+            if (!result.oauthToken || !result.tokenExpiration) {
                 reject('No token found');
+                return;
+            }
+
+            // Check if token is expired or about to expire (within 5 minutes)
+            const isExpired = Date.now() >= (result.tokenExpiration - 300000); // 5 minutes buffer
+            
+            if (isExpired) {
+                try {
+                    // Clear expired token
+                    chrome.storage.local.remove(['oauthToken', 'tokenExpiration']);
+                    // Get new token
+                    const newToken = await initiateAuth();
+                    resolve(newToken);
+                } catch (error) {
+                    reject('Failed to refresh token: ' + error.message);
+                }
+            } else {
+                resolve(result.oauthToken);
             }
         });
     });

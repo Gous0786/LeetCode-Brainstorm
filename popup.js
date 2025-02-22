@@ -40,14 +40,22 @@ document.addEventListener('DOMContentLoaded', function() {
     let pathPoints = [];
     const SMOOTHING_FACTOR = 0.3; // increased smoothing effect
 
-    // Function to initialize the Google Drive service
+    // Update the initialization function
     function initializeDriveService(token) {
-        driveService = new GoogleDriveService(token); // Initialize driveService with the token
-        console.log('Drive service initialized'); 
-        loadDrawing();// Log initialization
+        try {
+            driveService = new GoogleDriveService(token);
+            console.log('Drive service initialized');
+            // Load drawings immediately after initialization
+            loadDrawing().catch(error => {
+                console.error('Failed to load drawings:', error);
+            });
+            return true;
+        } catch (error) {
+            console.error('Failed to initialize drive service:', error);
+            showNotification('Failed to initialize drive service');
+            return false;
+        }
     }
-   
-
 
     // Check authentication and initialize driveService
     chrome.runtime.sendMessage({ type: "GET_AUTH_TOKEN" }, response => {
@@ -65,20 +73,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Move checkAuthStatus function here
+    // Update the auth check function
     async function checkAuthStatus() {
         console.log('Checking authentication status...');
-        chrome.runtime.sendMessage({ type: "GET_AUTH_TOKEN" }, (response) => {
-            console.log('Auth response:', response);
+        try {
+            const response = await new Promise((resolve) => {
+                chrome.runtime.sendMessage({ type: "GET_AUTH_TOKEN" }, (response) => {
+                    resolve(response);
+                });
+            });
+
             if (response && response.token) {
-                googleSignInBtn.style.display = "none";
-                userProfile.style.display = "flex";
-                userEmail.textContent = "Connected to Google Drive";
+                const initialized = await initializeDriveService(response.token);
+                if (initialized) {
+                    googleSignInBtn.style.display = "none";
+                    userProfile.style.display = "flex";
+                    userEmail.textContent = "Connected to Google Drive";
+                } else {
+                    throw new Error('Drive service initialization failed');
+                }
             } else {
                 googleSignInBtn.style.display = "flex";
                 userProfile.style.display = "none";
             }
-        });
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            googleSignInBtn.style.display = "flex";
+            userProfile.style.display = "none";
+            driveService = null;
+        }
     }
 
 // Add click handlers for authentication
@@ -97,15 +120,23 @@ googleSignInBtn.addEventListener('click', async () => {
 
         console.log('Auth response:', response);
         
-        if (response && response.success) {
-            await checkAuthStatus();
-            showNotification('Successfully signed in!');
+        if (response && response.success && response.token) {
+            const initialized = await initializeDriveService(response.token);
+            if (initialized) {
+                googleSignInBtn.style.display = "none";
+                userProfile.style.display = "flex";
+                userEmail.textContent = "Connected to Google Drive";
+                showNotification('Successfully signed in!');
+            } else {
+                throw new Error('Drive service initialization failed');
+            }
         } else {
             throw new Error(response?.error || 'Sign in failed');
         }
     } catch (error) {
         console.error('Login failed:', error);
         showNotification('Failed to sign in: ' + error.message);
+        driveService = null;
     }
 });
 
@@ -123,7 +154,12 @@ signOutBtn.addEventListener('click', async () => {
         });
 
         if (response && response.success) {
-            await checkAuthStatus();
+            // Clear local state
+            driveService = null;
+            // Update UI
+            googleSignInBtn.style.display = "flex";
+            userProfile.style.display = "none";
+            userEmail.textContent = "";
             showNotification('Signed out successfully');
         } else {
             throw new Error(response?.error || 'Sign out failed');
